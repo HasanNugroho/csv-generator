@@ -1,0 +1,31 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Query {
+  """
+  Generates and returns student survey data combined into a CSV format (Base64 encoded).
+  """
+  generateCsv(input: GenerateCsvInput!): String!
+}
+
+input GenerateCsvInput {
+  """The pre-defined ID group to filter students (1, 2, or 3)."""
+  groupId: Int
+
+  """
+  A custom list of student IDs to include in the CSV. Cannot be used with groupId.
+  """
+  customStudentIds: [ID!]
+
+  """
+  The desired output format (csv or excel). Defaults to csv if not provided.
+  """
+  format: OutputFormat = CSV
+}
+
+"""The output format for document"""
+enum OutputFormat {
+  CSV
+  EXCEL
+}
