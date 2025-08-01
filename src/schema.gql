@@ -6,10 +6,10 @@ type Query {
   """
   Generates and returns student survey data combined into a CSV format (Base64 encoded).
   """
-  generateCsv(input: GenerateCsvInput!): String!
+  exportSurveyData(input: ExportSurveyDataInput!): String!
 }
 
-input GenerateCsvInput {
+input ExportSurveyDataInput {
   """The pre-defined ID group to filter students (1, 2, or 3)."""
   groupId: Int
 

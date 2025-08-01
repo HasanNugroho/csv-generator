@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { GenerateCsvInput } from './dto/survey.dto';
+import { ExportSurveyDataInput } from './dto/survey.dto';
 import { parse } from 'json2csv';
 import * as XLSX from 'xlsx';
 import { OutputFormat } from 'src/common/enum';
+import { normalizeData } from './utils/survey.utils';
 
 export interface SurveyItem {
   _id: string;
@@ -25,19 +26,19 @@ export class SurveyService {
   ];
 
   constructor() {
-    // Load data dari file JSON sekali saat service dibuat
+    // Load data form JSON file
     const jsonData = JSON.parse(
       fs.readFileSync(path.resolve('./src/data/be-test-mock.json'), 'utf-8'),
     );
 
-    // Normalize data awal
-    this.data = jsonData.map((item: any) => this.normalizeData(item));
+    // Normalize data
+    this.data = normalizeData(jsonData);
   }
 
   /**
-   * Public API untuk ambil data berdasarkan groupId atau students
+   * Function for export survey data to specific format by group id and custom student list
    */
-  public getSurveyData(param: GenerateCsvInput): string {
+  public exportSurveyData(param: ExportSurveyDataInput): string {
     const { format, groupId, customStudentIds } = param;
 
     if (customStudentIds && groupId) {
@@ -60,7 +61,7 @@ export class SurveyService {
       selectedStudents,
     );
 
-    // Urutkan berdasarkan surveyWave
+    // sorting data by wave
     Object.values(filteredSurveyData).forEach((arr) => {
       arr.sort(
         (a, b) =>
@@ -90,7 +91,7 @@ export class SurveyService {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'SurveyData');
 
-    // Generate buffer dari workbook XLSX
+    // Generate buffer from XLSX workbook
     const excelBuffer = XLSX.write(workbook, {
       bookType: 'xlsx',
       type: 'buffer',
@@ -101,41 +102,7 @@ export class SurveyService {
   }
 
   /**
-   * Normalisasi nested object:
-   * - Kalau { "$date": "..." } tetap dikembalikan dengan struktur sama
-   * - Kalau kosong {} jadi { "$date": null }
-   * - Kalau nested object tetap dirapikan
-   */
-  private normalizeData(obj: any): any {
-    if (Array.isArray(obj)) {
-      return obj.map((val) => this.normalizeData(val));
-    }
-
-    if (obj && typeof obj === 'object') {
-      const keys = Object.keys(obj);
-
-      // Jika object kosong → dianggap "$date": null
-      if (keys.length === 0) {
-        return { $date: null };
-      }
-
-      // Jika hanya ada $date, tetap pertahankan
-      if (keys.length === 1 && keys[0] === '$date') {
-        return { $date: obj['$date'] ?? null };
-      }
-
-      // Kalau object biasa → normalize field dalamnya
-      return Object.fromEntries(
-        keys.map((key) => [key, this.normalizeData(obj[key])]),
-      );
-    }
-
-    // Kalau primitive (string, number, null, boolean), langsung return
-    return obj;
-  }
-
-  /**
-   * Flatten nested object ke satu level dengan prefix key opsional
+   * Flatten nested object with optional prefix
    */
   private flattenObject(obj: any, prefix = ''): any {
     return Object.keys(obj).reduce(
@@ -157,8 +124,8 @@ export class SurveyService {
   }
 
   /**
-   * Filter data berdasarkan daftar students
-   * Jika students kosong/null → ambil semua
+   * Filter data by student list
+   * If params students don't exist, take all data
    */
   private filterSurveyData(
     data: SurveyItem[],
@@ -174,7 +141,7 @@ export class SurveyService {
   }
 
   /**
-   * Flatten tiap student (per _id) dan merge per surveyWave
+   * Flatten each student (per _id) and merge per surveyWave
    */
   private flattenAndMerge(groupedData: Record<string, SurveyItem[]>): any[] {
     const merged: any[] = [];

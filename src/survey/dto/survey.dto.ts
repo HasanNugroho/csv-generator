@@ -10,7 +10,7 @@ import {
 import { OutputFormat } from 'src/common/enum';
 
 @InputType()
-export class GenerateCsvInput {
+export class ExportSurveyDataInput {
   @Field(() => Int, {
     nullable: true,
     description: 'The pre-defined ID group to filter students (1, 2, or 3).',
