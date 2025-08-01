@@ -4,7 +4,7 @@ import * as path from 'path';
 import { ExportSurveyDataInput } from './dto/survey.dto';
 import { parse } from 'json2csv';
 import * as XLSX from 'xlsx';
-import { OutputFormat } from 'src/common/enum';
+import { OutputFormat } from '../common/enum';
 import { normalizeData } from './utils/survey.utils';
 
 export interface SurveyItem {
@@ -51,9 +51,10 @@ export class SurveyService {
 
     if (groupId) {
       const foundGroup = this.defaultGroup.find((g) => g.id === groupId);
-      if (foundGroup) {
-        selectedStudents = foundGroup.students;
+      if (!foundGroup) {
+        throw new BadRequestException('group id does not exist');
       }
+      selectedStudents = foundGroup.students;
     }
 
     const filteredSurveyData = this.filterSurveyData(
@@ -102,28 +103,6 @@ export class SurveyService {
   }
 
   /**
-   * Flatten nested object with optional prefix
-   */
-  private flattenObject(obj: any, prefix = ''): any {
-    return Object.keys(obj).reduce(
-      (acc, key) => {
-        const pre = prefix ? `${prefix}.` : '';
-        if (
-          typeof obj[key] === 'object' &&
-          obj[key] !== null &&
-          Object.keys(obj[key]).length > 0
-        ) {
-          Object.assign(acc, this.flattenObject(obj[key], pre + key));
-        } else {
-          acc[pre + key] = obj[key];
-        }
-        return acc;
-      },
-      {} as Record<string, any>,
-    );
-  }
-
-  /**
    * Filter data by student list
    * If params students don't exist, take all data
    */
@@ -161,5 +140,27 @@ export class SurveyService {
     });
 
     return merged;
+  }
+
+  /**
+   * Flatten nested object with optional prefix
+   */
+  private flattenObject(obj: any, prefix = ''): any {
+    return Object.keys(obj).reduce(
+      (acc, key) => {
+        const pre = prefix ? `${prefix}.` : '';
+        if (
+          typeof obj[key] === 'object' &&
+          obj[key] !== null &&
+          Object.keys(obj[key]).length > 0
+        ) {
+          Object.assign(acc, this.flattenObject(obj[key], pre + key));
+        } else {
+          acc[pre + key] = obj[key];
+        }
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
   }
 }

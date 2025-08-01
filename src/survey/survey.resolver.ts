@@ -1,6 +1,5 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { SurveyService } from './survey.service';
-import { BadRequestException } from '@nestjs/common';
 import { ExportSurveyDataInput } from './dto/survey.dto';
 
 @Resolver()
